@@ -3,6 +3,7 @@ package scim
 import (
 	"bytes"
 	"encoding/json"
+	stderrors "errors"
 	"net/http"
 
 	"github.com/elimity-com/scim/errors"
@@ -153,11 +154,27 @@ func (t ResourceType) validatePatch(r *http.Request) ([]PatchOperation, *errors.
 			t.getSchemaExtensions()...,
 		)
 		if err != nil {
-			return nil, &errors.ScimErrorInvalidPath
+			var v *errors.ScimError
+			if stderrors.As(err, &v) {
+				return nil, v
+			}
+			return nil, &errors.ScimError{
+				ScimType: errors.ScimTypeInvalidPath,
+				Detail:   "The \"path\" attribute was invalid or malformed. Details: " + err.Error(),
+				Status:   http.StatusBadRequest,
+			}
 		}
 		value, err := validator.Validate()
 		if err != nil {
-			return nil, &errors.ScimErrorInvalidValue
+			var v *errors.ScimError
+			if stderrors.As(err, &v) {
+				return nil, v
+			}
+			return nil, &errors.ScimError{
+				ScimType: errors.ScimTypeInvalidValue,
+				Detail:   "A required value was missing, or the value specified was not compatible with the operation or attribute type, or resource schema. Details: " + err.Error(),
+				Status:   http.StatusBadRequest,
+			}
 		}
 		operations = append(operations, PatchOperation{
 			Op:    string(validator.Op),

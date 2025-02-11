@@ -238,7 +238,11 @@ func TestServerResourcePatchHandlerInvalidPath(t *testing.T) {
 
 	var scimErr *errors.ScimError
 	assertUnmarshalNoError(t, json.Unmarshal(rr.Body.Bytes(), &scimErr))
-	assertEqualSCIMErrors(t, &errors.ScimErrorInvalidPath, scimErr)
+	assertEqualSCIMErrors(t, &errors.ScimError{
+		ScimType: errors.ScimTypeInvalidPath,
+		Detail:   "The \"path\" attribute was invalid or malformed. Details: the attribute has no sub-attributes named: invalid",
+		Status:   http.StatusBadRequest,
+	}, scimErr)
 }
 
 func TestServerResourcePatchHandlerInvalidRemoveOp(t *testing.T) {
